@@ -6,12 +6,12 @@ FAreaLight::FAreaLight(const FString& InFilename, FMaterial* InMaterial): FTrian
 	InteractionInfo.Emit = _Material->Emission;
 
 	{
-		float Area = 0.f;
+		Float Area = 0.0;
 		for (const FTriangle& Triangle : _Triangles)
 		{
-			Area  += Triangle.GetArea();
+			Area += Triangle.GetArea();
 		}
-		InverseArea = 1.f / Area;
+		InverseArea = 1.0 / Area;
 	}
 
 	if (!_Triangles.empty())
@@ -21,10 +21,9 @@ FAreaLight::FAreaLight(const FString& InFilename, FMaterial* InMaterial): FTrian
 
 	InteractionInfo.Distance = INFINITY;
 	InteractionInfo.HitMaterial = _Material;
-	InteractionInfo.HitObject = this;
 }
 
-void FAreaLight::SampleLight(FInteraction& OutSampleInteraction, float& OutPdf) const
+void FAreaLight::SampleLight(FInteraction& OutSampleInteraction, Float& OutPdf) const
 {
 	const FInteraction MeshInteraction = SampleMesh();
 
@@ -32,6 +31,7 @@ void FAreaLight::SampleLight(FInteraction& OutSampleInteraction, float& OutPdf) 
 	OutSampleInteraction.TCoords = MeshInteraction.TCoords;
 	OutSampleInteraction.Coords = MeshInteraction.Coords;
 	OutSampleInteraction.Normal = MeshInteraction.Normal;
+	OutSampleInteraction.HitTriangle = MeshInteraction.HitTriangle;
 
 	OutPdf = InverseArea;
 }

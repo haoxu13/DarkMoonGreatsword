@@ -4,21 +4,21 @@
 class FRay
 {
 public:
-	FRay() : MaxDistance(INFINITY), Time(0.f)
+	FRay() : MaxDistance(INFINITY), Time(0.0)
 	{
 	}
 
-	FRay(const FVector& NewOrigin, const FVector& NewDirection, float NewMaxDistance = INFINITY,
-		float NewTime = 0.f)
+	FRay(const FVector& NewOrigin, const FVector& NewDirection, Float NewMaxDistance = INFINITY,
+		Float NewTime = 0.0)
 		: Origin(NewOrigin), Direction(NewDirection), MaxDistance(NewMaxDistance), Time(NewTime)
 	{
 	}
 
-	FVector operator()(float InDistance) const { return Origin + Direction * InDistance; }
+	FVector operator()(Float InDistance) const { return Origin + Direction * InDistance; }
 
 public:
 	FVector Origin;
 	FVector Direction;
-	float MaxDistance;
-	float Time;
+	Float MaxDistance;
+	Float Time;
 };

@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 
 class FMaterial;
-class FTriangleMesh;
+class FTriangle;
 
 class FInteraction
 {
@@ -12,8 +12,8 @@ public:
     FVector Coords;
     FVector TCoords; // UV coordinate, only using first two elements
     FVector Normal;
-    float Distance{-1.f};
-    FTriangleMesh* HitObject{nullptr};
+    Float Distance{-1.0};
+    FTriangle* HitTriangle{nullptr};
     FMaterial* HitMaterial{nullptr};
 	bool bHappened{false};
 };

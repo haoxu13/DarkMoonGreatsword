@@ -25,11 +25,12 @@ public:
 		return Point3;
 	}
 
-	[[nodiscard]] FInteraction Intersect(const FRay& InRay) const;
+	// Möller-Trumbore algorithm
+	[[nodiscard]] FInteraction Intersect(const FRay& InRay, FTriangle* FromTriangle = nullptr) const;
 
 	FVector GetCentroid() const;
 	FVector GetNormal() const;
-	float GetArea() const;
+	Float GetArea() const;
 
 	FVector LocalToWorld(const FVector& InUV) const;
 
@@ -43,7 +44,7 @@ public:
 	explicit FTriangleMesh(const FString& InFilename, FMaterial* InMaterial = new FMaterial());
 	explicit FTriangleMesh(const TArray<FTriangle>& NewTriangles, FMaterial* InMaterial = new FMaterial());
 
-	[[nodiscard]] FInteraction Intersect(const FRay& InRay, FTriangleMesh* FromMesh = nullptr) const;
+	[[nodiscard]] FInteraction Intersect(const FRay& InRay, FTriangle* FromTriangle) const;
 
 	FInteraction SampleMesh() const;
 

@@ -6,7 +6,7 @@
 #include "Ray.h"
 #include "Scene.h"
 
-inline float Deg2Rad(const float InDeg) { return InDeg * PI / 180.0f; }
+inline Float Deg2Rad(const Float InDeg) { return InDeg * PI / 180.0; }
 
 void FPathIntegrator::Render(const FScene& InScene)
 {
@@ -18,11 +18,11 @@ void FPathIntegrator::Render(const FScene& InScene)
 
 	int Resolution = ResolutionX * ResolutionY;
 
-	float Fov = 40.f;
+	Float Fov = 40.0;
 	TArray<FVector> NewFramebuffer(ResolutionX * ResolutionY);
 
-	float Scale = tan(Deg2Rad(Fov * 0.5f));
-	float ImageAspectRatio = static_cast<float>(ResolutionX) / static_cast<float>(ResolutionY);
+	Float Scale = tan(Deg2Rad(Fov * 0.5));
+	Float ImageAspectRatio = static_cast<Float>(ResolutionX) / static_cast<Float>(ResolutionY);
 	FVector EyePos(278, 273, -800);
 
 	std::cout << "SPP: " << SamplesPerPixel << "\n";
@@ -35,22 +35,21 @@ void FPathIntegrator::Render(const FScene& InScene)
 		int IndexY = CurrentIndex / ResolutionY;
 
 		// Generate primary ray direction
-		float DeviceCoordX = (2.f * (static_cast<float>(IndexX) + 0.5f) / static_cast<float>(ResolutionX) - 1.f) *
+		Float DeviceCoordX = (2.0 * (static_cast<Float>(IndexX) + 0.5) / static_cast<Float>(ResolutionX) - 1.0) *
 			ImageAspectRatio * Scale;
-		float DeviceCoordY = (1.f - 2.f * (static_cast<float>(IndexY) + 0.5f) / static_cast<float>(ResolutionY)) * Scale;
+		Float DeviceCoordY = (1.0 - 2.0 * (static_cast<Float>(IndexY) + 0.5) / static_cast<Float>(ResolutionY)) * Scale;
 
-		// TODO: Randomize?
 		FVector ViewDirection = FVector(-DeviceCoordX, DeviceCoordY, 1).Normalize();
 		for (int NthSample = 0; NthSample < SamplesPerPixel; NthSample++)
 		{
 			uint32_t PixelIndex = IndexY * ResolutionX + IndexX;
-			NewFramebuffer[PixelIndex] += Shade(FRay(EyePos, ViewDirection), InScene, 0) / static_cast<float>(SamplesPerPixel);
+			NewFramebuffer[PixelIndex] += Shade(FRay(EyePos, ViewDirection), InScene, 0) / static_cast<Float>(SamplesPerPixel);
 		}
 
 		// Report progress on each pixel
 		{
 			++FinishedPixelsCount;
-			const float CurrentProgress = 100.f * static_cast<float>(FinishedPixelsCount) / static_cast<float>(Resolution);
+			const Float CurrentProgress = 100.0 * static_cast<Float>(FinishedPixelsCount) / static_cast<Float>(Resolution);
 			printf("\rRender progress: %f%%", CurrentProgress);
 			fflush(stdout);
 		}
@@ -69,11 +68,11 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	// Ray missed hit
 	if (!ShadingPointInteraction.bHappened)
 	{
-		return FVector(0.f);
+		return FVector();
 	}
 
 	// Hit light source, assuming light source won't reflect radiance
-	if (ShadingPointInteraction.Emit.Norm() > 0.f)
+	if (ShadingPointInteraction.Emit.Norm() > 0.0)
 	{
 		return ShadingPointInteraction.Emit;
 	}
@@ -86,7 +85,7 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	FVector DirectLightRadiance;
 	{
 		FInteraction DirectLightInteraction;
-		float PdfLight;
+		Float PdfLight;
 		// TODO: Sample multiple lights
 		InScene.SampleLight(DirectLightInteraction, PdfLight);
 
@@ -95,17 +94,17 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 		FVector DirectLightNormal = Normalize(DirectLightInteraction.Normal);
 
 		// Check occlusion
-		FInteraction NearestIntersectionToLight = InScene.Intersect(FRay(ShadingPointPosition, LightDirection), ShadingPointInteraction.HitObject);
-		if (NearestIntersectionToLight.HitObject == DirectLightInteraction.HitObject) // Hack check if hit light
+		FInteraction NearestIntersectionToLight = InScene.Intersect(FRay(ShadingPointPosition, LightDirection), ShadingPointInteraction.HitTriangle);
+		if (FVector::IsAlmostSame(NearestIntersectionToLight.Coords, DirectLightInteraction.Coords))
 		{
 			// Assuming shading point won't emit
 			// EmitRadiance(0) + LightRadiance * BRDF * Costheta * Costheta' / LightPositionDistanceSquare / LightArea
 			const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(LightDirection, ViewRayDirection, ShadingPointNormal);
 			const FVector InSampleLightRadiance = DirectLightInteraction.Emit;
-			const float Costheta = DotProduct(LightDirection, ShadingPointNormal); // Angle of surface normal and SurfaceToLight direction
-			const float CosthetaPrime = DotProduct(-LightDirection, DirectLightNormal); // Angle of light normal and LightToSurface direction
-			const float InverseNormSquare = 1.f / ((LightPosition - ShadingPointPosition).Norm() * (LightPosition - ShadingPointPosition).Norm());
-			const float InverseLightPdf = 1.f / PdfLight;
+			const Float Costheta = DotProduct(LightDirection, ShadingPointNormal); // Angle of surface normal and SurfaceToLight direction
+			const Float CosthetaPrime = DotProduct(-LightDirection, DirectLightNormal); // Angle of light normal and LightToSurface direction
+			const Float InverseNormSquare = 1.0 / ((LightPosition - ShadingPointPosition).Norm() * (LightPosition - ShadingPointPosition).Norm());
+			const Float InverseLightPdf = 1.0 / PdfLight;
 
 			DirectLightRadiance = InSampleLightRadiance * BRDF * Costheta * CosthetaPrime * InverseNormSquare * InverseLightPdf;
 		}
@@ -127,19 +126,19 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	{
 		FVector IndirectLightDirection = ShadingPointInteraction.HitMaterial->Sample(ViewRayDirection, ShadingPointNormal);
 
-		constexpr float InverseHemiSpherePdf = 2.f * PI;
-		static const float InverseRussianRoulette = 1.f / RussianRoulette;
+		constexpr Float InverseHemiSpherePdf = 2.0 * PI;
+		static const Float InverseRussianRoulette = 1.0 / RussianRoulette;
 
 		const FVector InRadiance = Shade(FRay(ShadingPointPosition, IndirectLightDirection), InScene, Depth + 1);
 		const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(IndirectLightDirection, ViewRayDirection, ShadingPointNormal);
-		const float Costheta = DotProduct(IndirectLightDirection, ShadingPointNormal);
+		const Float Costheta = DotProduct(IndirectLightDirection, ShadingPointNormal);
 		IndirectLightRadiance = InRadiance * BRDF * Costheta * InverseHemiSpherePdf * InverseRussianRoulette;
 	}
 
 	return DirectLightRadiance + IndirectLightRadiance;
 }
 
-inline float Clamp(const float& Low, const float& High, const float& InValue)
+inline Float Clamp(const Float& Low, const Float& High, const Float& InValue)
 {
 	return std::max(Low, std::min(High, InValue));
 }

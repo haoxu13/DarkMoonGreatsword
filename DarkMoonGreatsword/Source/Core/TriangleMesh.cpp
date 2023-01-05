@@ -15,34 +15,40 @@ FTriangle::FTriangle(const FVector& InPoint1, const FVector& InPoint2, const FVe
 {
 }
 
-FInteraction FTriangle::Intersect(const FRay& InRay) const
+FInteraction FTriangle::Intersect(const FRay& InRay, FTriangle* FromTriangle) const
 {
-	// Möller-Trumbore
 	FInteraction NewInteraction;
 
-	FVector NewOrigin = InRay.Origin - Point1;
-	FVector Edge1 = Point2 - Point1;
-	FVector Edge2 = Point3 - Point1;
+	if (FromTriangle == this)
+	{
+		return NewInteraction;
+	}
 
-	float Determinant = InRay.Direction.CrossProduct(Edge2).DotProduct(Edge1);
+	const FVector NewOrigin = InRay.Origin - Point1;
+	const FVector Edge1 = Point2 - Point1;
+	const FVector Edge2 = Point3 - Point1;
 
-	float DeterminantT = NewOrigin.CrossProduct(Edge1).DotProduct(Edge2);
-	float DeterminantU = InRay.Direction.CrossProduct(Edge2).DotProduct(NewOrigin);
-	float DeterminantV = NewOrigin.CrossProduct(Edge1).DotProduct(InRay.Direction);
+	const Float InverseDeterminant = 1.0 / InRay.Direction.CrossProduct(Edge2).DotProduct(Edge1);
 
-	float OutT = DeterminantT / Determinant;
-	float OutU = DeterminantU / Determinant;
-	float OutV = DeterminantV / Determinant;
+	const Float DeterminantT = NewOrigin.CrossProduct(Edge1).DotProduct(Edge2);
+	const Float DeterminantU = InRay.Direction.CrossProduct(Edge2).DotProduct(NewOrigin);
+	const Float DeterminantV = NewOrigin.CrossProduct(Edge1).DotProduct(InRay.Direction);
+
+	const Float OutT = DeterminantT * InverseDeterminant;
+	const Float OutU = DeterminantU * InverseDeterminant;
+	const Float OutV = DeterminantV * InverseDeterminant;
 
 	const bool bHit = IsAlmostGreaterThanZero(OutT) && IsAlmostInRange(OutU) && IsAlmostInRange(OutV) && IsAlmostSmallerThanOne(OutU + OutV);
 
 	if (bHit)
 	{
 		NewInteraction.bHappened = bHit;
-		NewInteraction.Coords = InRay.Origin + OutT * InRay.Direction;
+		// NewInteraction.Coords = InRay.Origin + OutT * InRay.Direction; // Inaccurate
 		NewInteraction.TCoords = FVector(OutU, OutV, 0.f);
+		NewInteraction.Coords = LocalToWorld(NewInteraction.TCoords);
 		NewInteraction.Normal = Edge1.CrossProduct(Edge2).Normalize();
 		NewInteraction.Distance = OutT;
+		NewInteraction.HitTriangle = const_cast<FTriangle*>(this);
 	}
 
 	return NewInteraction;
@@ -50,7 +56,7 @@ FInteraction FTriangle::Intersect(const FRay& InRay) const
 
 FVector FTriangle::GetCentroid() const
 {
-	return 1.f / 3.f * (Point1 + Point2 + Point3);
+	return 1.0 / 3.0 * (Point1 + Point2 + Point3);
 }
 
 FVector FTriangle::GetNormal() const
@@ -60,7 +66,7 @@ FVector FTriangle::GetNormal() const
 	return Edge1.CrossProduct(Edge2).Normalize();
 }
 
-float FTriangle::GetArea() const
+Float FTriangle::GetArea() const
 {
 	const FVector Edge1 = Point2 - Point1;
 	const FVector Edge2 = Point3 - Point1;
@@ -89,29 +95,22 @@ FTriangleMesh::FTriangleMesh(const TArray<FTriangle>& NewTriangles, FMaterial* I
 {
 }
 
-FInteraction FTriangleMesh::Intersect(const FRay& InRay, FTriangleMesh* FromMesh) const
+FInteraction FTriangleMesh::Intersect(const FRay& InRay, FTriangle* FromTriangle) const
 {
 	FInteraction NewInteraction;
 
-	// Don't intersect with myself- 
-	if (FromMesh && FromMesh == this)
-	{
-		return NewInteraction;
-	}
-
-	float MinDistance = INFINITY;
+	Float MinDistance = INFINITY;
 	for (const auto& Triangle : _Triangles)
 	{
-		const FInteraction CurrentInteraction = Triangle.Intersect(InRay);
+		const FInteraction CurrentInteraction = Triangle.Intersect(InRay, FromTriangle);
 
-		const bool bNearestIntersection = CurrentInteraction.bHappened && IsAlmostGreaterThanZero(CurrentInteraction.Distance) && CurrentInteraction.Distance < MinDistance;
+		const bool bNearestIntersection = CurrentInteraction.bHappened && CurrentInteraction.Distance > 0.0 && CurrentInteraction.Distance < MinDistance;
 		if (bNearestIntersection)
 		{
 			MinDistance = CurrentInteraction.Distance;
 			NewInteraction = CurrentInteraction;
 			NewInteraction.HitMaterial = _Material;
 			NewInteraction.Emit = _Material->Emission;
-			NewInteraction.HitObject = const_cast<FTriangleMesh*>(this);
 		}
 	}
 
@@ -123,10 +122,9 @@ FInteraction FTriangleMesh::SampleMesh() const
 	assert(!_Triangles.empty());
 
 	const int RandomTriangleIndex = GetRandomIntInRange(0, static_cast<int>(_Triangles.size()) - 1);
-	const float RandomU = GetRandomFloat();
-	const float RandomV = 1.f - RandomU;
+	const Float RandomU = GetRandomFloat();
+	const Float RandomV = 1.0 - RandomU;
 	const FVector RandomUV(RandomU, RandomV, 0.f);
-	// const FVector RandomUV(GetRandomFloat(), GetRandomFloat(), 0.f);
 
 	const FVector SamplePosition = _Triangles[RandomTriangleIndex].LocalToWorld(RandomUV);
 
@@ -134,7 +132,7 @@ FInteraction FTriangleMesh::SampleMesh() const
 	ReturnSampleInteraction.TCoords = RandomUV;
 	ReturnSampleInteraction.Coords = SamplePosition;
 	ReturnSampleInteraction.Normal = _Triangles[RandomTriangleIndex].GetNormal();
-	ReturnSampleInteraction.HitObject = const_cast<FTriangleMesh*>(this);
+	ReturnSampleInteraction.HitTriangle = const_cast<FTriangle*>(&_Triangles[RandomTriangleIndex]);
 	ReturnSampleInteraction.HitMaterial = _Material;
 
 	return ReturnSampleInteraction;

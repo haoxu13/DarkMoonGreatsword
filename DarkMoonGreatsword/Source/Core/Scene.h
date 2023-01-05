@@ -15,9 +15,9 @@ public:
 	void AddLight(FAreaLight* NewLight);
 
 	// Add from mesh to avoid intersection itself
-	FInteraction Intersect(const FRay& InRay, FTriangleMesh* FromMesh = nullptr) const;
+	FInteraction Intersect(const FRay& InRay, FTriangle* FromTriangle = nullptr) const;
 
-	void SampleLight(FInteraction& OutSampleInteraction, float& OutPdf) const;
+	void SampleLight(FInteraction& OutSampleInteraction, Float& OutPdf) const;
 
 public:
 	int ResolutionX;

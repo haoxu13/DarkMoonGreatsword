@@ -11,7 +11,7 @@ public:
     // given a ray, calculate the contribution of this ray
     FVector Eval(const FVector &InRayDirection, const FVector &InViewDirection, const FVector &InNormal);
     // given a ray, calculate the PdF of this ray
-    float Pdf(const FVector &InRayDirection, const FVector &OutRayDirection, const FVector &N);
+    Float Pdf(const FVector &InRayDirection, const FVector &OutRayDirection, const FVector &N);
 
 public:
 	// Diffuse, Specular

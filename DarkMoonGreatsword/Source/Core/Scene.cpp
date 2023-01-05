@@ -18,16 +18,16 @@ void FScene::AddLight(FAreaLight* NewLight)
 	Add(NewLight);
 }
 
-FInteraction FScene::Intersect(const FRay& InRay, FTriangleMesh* FromMesh) const
+FInteraction FScene::Intersect(const FRay& InRay, FTriangle* FromTriangle) const
 {
 	FInteraction NewInteraction;
 
-	float MinDistance = INFINITY;
+	Float MinDistance = INFINITY;
 	for (const FTriangleMesh* TriangleMesh : TriangleMeshes)
 	{
-		const FInteraction CurrentInteraction = TriangleMesh->Intersect(InRay, FromMesh);
+		const FInteraction CurrentInteraction = TriangleMesh->Intersect(InRay, FromTriangle);
 
-		const bool bNearestIntersection = CurrentInteraction.bHappened && IsAlmostGreaterThanZero(CurrentInteraction.Distance) && CurrentInteraction.Distance < MinDistance;
+		const bool bNearestIntersection = CurrentInteraction.bHappened && CurrentInteraction.Distance > 0.0 && CurrentInteraction.Distance < MinDistance;
 		if (bNearestIntersection)
 		{
 			MinDistance = CurrentInteraction.Distance;
@@ -38,7 +38,7 @@ FInteraction FScene::Intersect(const FRay& InRay, FTriangleMesh* FromMesh) const
 	return NewInteraction;
 }
 
-void FScene::SampleLight(FInteraction& OutSampleInteraction, float& OutPdf) const
+void FScene::SampleLight(FInteraction& OutSampleInteraction, Float& OutPdf) const
 {
 	// TODO: UnCheat
 	Light->SampleLight(OutSampleInteraction, OutPdf);
