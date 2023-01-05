@@ -16,6 +16,12 @@ void FScene::AddLight(FAreaLight* NewLight)
 {
 	Light = NewLight;
 	Add(NewLight);
+	UpdateInverseLightPdf();
+}
+
+void FScene::UpdateInverseLightPdf()
+{
+	InverseLightPdf = Light->Area;
 }
 
 FInteraction FScene::Intersect(const FRay& InRay, FTriangle* FromTriangle) const

@@ -23,8 +23,14 @@ public:
 	int ResolutionX;
 	int ResolutionY;
 
+	Float InverseLightPdf;
+
+protected:
+	void UpdateInverseLightPdf();
+
 protected:
 	TArray<FTriangleMesh*> TriangleMeshes;
 
 	FAreaLight* Light;
 };
+

@@ -6,7 +6,7 @@ FAreaLight::FAreaLight(const FString& InFilename, FMaterial* InMaterial): FTrian
 	InteractionInfo.Emit = _Material->Emission;
 
 	{
-		Float Area = 0.0;
+		Area = 0.0;
 		for (const FTriangle& Triangle : _Triangles)
 		{
 			Area += Triangle.GetArea();

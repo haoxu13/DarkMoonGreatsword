@@ -35,7 +35,7 @@ FVector FMaterial::Sample(const FVector& InRayDirection, const FVector& InNormal
 
 FVector FMaterial::Eval(const FVector& InRayDirection, const FVector& InViewDirection, const FVector& InNormal)
 {
-	// calculate the contribution of diffuse   model
+	// Calculate the contribution of diffuse model
 	const Float CosTheta = DotProduct(InNormal, InRayDirection);
 	if (CosTheta > 0.0)
 	{

@@ -8,6 +8,8 @@ public:
 
 	void SampleLight(FInteraction& OutSampleInteraction, Float& OutPdf) const;
 
+	Float Area{0.0};
+
 protected:
 	FInteraction InteractionInfo;
 	Float InverseArea{0.0};

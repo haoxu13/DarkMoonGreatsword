@@ -31,19 +31,19 @@ void FPathIntegrator::Render(const FScene& InScene)
 #pragma omp parallel for
 	for (int CurrentIndex = 0; CurrentIndex < static_cast<int>(NewFramebuffer.size()); ++CurrentIndex)
 	{
-		int IndexX = CurrentIndex % ResolutionY;
-		int IndexY = CurrentIndex / ResolutionY;
+		const int IndexX = CurrentIndex % ResolutionY;
+		const int IndexY = CurrentIndex / ResolutionY;
 
 		// Generate primary ray direction
-		Float DeviceCoordX = (2.0 * (static_cast<Float>(IndexX) + 0.5) / static_cast<Float>(ResolutionX) - 1.0) *
+		const Float DeviceCoordX = (2.0 * (static_cast<Float>(IndexX) + 0.5) / static_cast<Float>(ResolutionX) - 1.0) *
 			ImageAspectRatio * Scale;
-		Float DeviceCoordY = (1.0 - 2.0 * (static_cast<Float>(IndexY) + 0.5) / static_cast<Float>(ResolutionY)) * Scale;
+		const Float DeviceCoordY = (1.0 - 2.0 * (static_cast<Float>(IndexY) + 0.5) / static_cast<Float>(ResolutionY)) * Scale;
 
 		FVector ViewDirection = FVector(-DeviceCoordX, DeviceCoordY, 1).Normalize();
 		for (int NthSample = 0; NthSample < SamplesPerPixel; NthSample++)
 		{
-			uint32_t PixelIndex = IndexY * ResolutionX + IndexX;
-			NewFramebuffer[PixelIndex] += Shade(FRay(EyePos, ViewDirection), InScene, 0) / static_cast<Float>(SamplesPerPixel);
+			const uint32_t PixelIndex = IndexY * ResolutionX + IndexX;
+			NewFramebuffer[PixelIndex] += Shade(FRay(EyePos, ViewDirection), InScene, 0) * InverseSamplesPerPixel;
 		}
 
 		// Report progress on each pixel
@@ -85,7 +85,7 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	FVector DirectLightRadiance;
 	{
 		FInteraction DirectLightInteraction;
-		Float PdfLight;
+		Float PdfLight; // Not used
 		// TODO: Sample multiple lights
 		InScene.SampleLight(DirectLightInteraction, PdfLight);
 
@@ -97,16 +97,19 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 		FInteraction NearestIntersectionToLight = InScene.Intersect(FRay(ShadingPointPosition, LightDirection), ShadingPointInteraction.HitTriangle);
 		if (FVector::IsAlmostSame(NearestIntersectionToLight.Coords, DirectLightInteraction.Coords))
 		{
-			// Assuming shading point won't emit
-			// EmitRadiance(0) + LightRadiance * BRDF * Costheta * Costheta' / LightPositionDistanceSquare / LightArea
-			const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(LightDirection, ViewRayDirection, ShadingPointNormal);
-			const FVector InSampleLightRadiance = DirectLightInteraction.Emit;
 			const Float Costheta = DotProduct(LightDirection, ShadingPointNormal); // Angle of surface normal and SurfaceToLight direction
 			const Float CosthetaPrime = DotProduct(-LightDirection, DirectLightNormal); // Angle of light normal and LightToSurface direction
-			const Float InverseNormSquare = 1.0 / ((LightPosition - ShadingPointPosition).Norm() * (LightPosition - ShadingPointPosition).Norm());
-			const Float InverseLightPdf = 1.0 / PdfLight;
+			if (Costheta > 0.0 && CosthetaPrime > 0.0)
+			{
+				// Assuming shading point won't emit
+				// EmitRadiance(0) + LightRadiance * BRDF * Costheta * Costheta' / LightPositionDistanceSquare / LightArea
+				const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(LightDirection, ViewRayDirection, ShadingPointNormal);
+				const FVector InSampleLightRadiance = DirectLightInteraction.Emit;
+				const Float InverseNormSquare = 1.0 / ((LightPosition - ShadingPointPosition).Norm() * (LightPosition - ShadingPointPosition).Norm());
+				const Float InverseLightPdf = InScene.InverseLightPdf;
 
-			DirectLightRadiance = InSampleLightRadiance * BRDF * Costheta * CosthetaPrime * InverseNormSquare * InverseLightPdf;
+				DirectLightRadiance = InSampleLightRadiance * BRDF * Costheta * CosthetaPrime * InverseNormSquare * InverseLightPdf;
+			}
 		}
 	}
 
@@ -124,15 +127,16 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	// Sample Indirect light
 	FVector IndirectLightRadiance;
 	{
-		FVector IndirectLightDirection = ShadingPointInteraction.HitMaterial->Sample(ViewRayDirection, ShadingPointNormal);
-
-		constexpr Float InverseHemiSpherePdf = 2.0 * PI;
-		static const Float InverseRussianRoulette = 1.0 / RussianRoulette;
-
-		const FVector InRadiance = Shade(FRay(ShadingPointPosition, IndirectLightDirection), InScene, Depth + 1);
-		const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(IndirectLightDirection, ViewRayDirection, ShadingPointNormal);
+		const FVector IndirectLightDirection = ShadingPointInteraction.HitMaterial->Sample(ViewRayDirection, ShadingPointNormal);
 		const Float Costheta = DotProduct(IndirectLightDirection, ShadingPointNormal);
-		IndirectLightRadiance = InRadiance * BRDF * Costheta * InverseHemiSpherePdf * InverseRussianRoulette;
+		if (Costheta > 0.0)
+		{
+			constexpr Float InverseHemiSpherePdf = 2.0 * PI;
+			const FVector InRadiance = Shade(FRay(ShadingPointPosition, IndirectLightDirection), InScene, Depth + 1);
+			const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(IndirectLightDirection, ViewRayDirection, ShadingPointNormal);
+
+			IndirectLightRadiance = InRadiance * BRDF * Costheta * InverseHemiSpherePdf * InverseRussianRoulette;
+		}
 	}
 
 	return DirectLightRadiance + IndirectLightRadiance;
