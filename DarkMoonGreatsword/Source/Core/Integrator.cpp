@@ -146,7 +146,7 @@ inline float Clamp(const float& Low, const float& High, const float& InValue)
 
 void FPathIntegrator::SaveToFile()
 {
-	FILE* Fp = fopen("render_result.ppm", "wb");
+	FILE* Fp = fopen("../Result/result.ppm", "wb");
 	(void)fprintf(Fp, "P6\n%d %d\n255\n", _ResolutionX, _ResolutionY);
 	for (const auto& Pixel : _Framebuffer)
 	{
