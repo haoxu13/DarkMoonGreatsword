@@ -55,11 +55,11 @@ inline bool IsAlmostInRange(Float Number)
 }
 
 // Distribution in range [0.0, 1.0]
-inline Float GetRandomFloat()
+inline Float GetRandomFloat(Float Min = 0.0, Float Max = 1.0)
 {
 	std::random_device RandomDevice;
 	std::mt19937 Rng(RandomDevice());
-	const std::uniform_real_distribution<Float> Dist(0.0, 1.0);
+	const std::uniform_real_distribution<Float> Dist(Min, Max);
 
 	return Dist(Rng);
 }

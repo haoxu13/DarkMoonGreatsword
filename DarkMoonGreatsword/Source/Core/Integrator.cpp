@@ -33,16 +33,20 @@ void FPathIntegrator::Render(const FScene& InScene)
 	{
 		const int IndexX = CurrentIndex % ResolutionY;
 		const int IndexY = CurrentIndex / ResolutionY;
+		const uint32_t PixelIndex = IndexY * ResolutionX + IndexX;
 
-		// Generate primary ray direction
-		const Float DeviceCoordX = (2.0 * (static_cast<Float>(IndexX) + 0.5) / static_cast<Float>(ResolutionX) - 1.0) *
-			ImageAspectRatio * Scale;
-		const Float DeviceCoordY = (1.0 - 2.0 * (static_cast<Float>(IndexY) + 0.5) / static_cast<Float>(ResolutionY)) * Scale;
-
-		FVector ViewDirection = FVector(-DeviceCoordX, DeviceCoordY, 1).Normalize();
 		for (int NthSample = 0; NthSample < SamplesPerPixel; NthSample++)
 		{
-			const uint32_t PixelIndex = IndexY * ResolutionX + IndexX;
+			// Generate primary ray direction
+			FVector ViewDirection;
+			{
+				const Float RandomBiasX = GetRandomFloat(-0.5, 0.5);
+				const Float RandomBiasY = GetRandomFloat(-0.5, 0.5);
+				const Float DeviceCoordX = (2.0 * (static_cast<Float>(IndexX) + 0.5 + RandomBiasX) / static_cast<Float>(ResolutionX) - 1.0) *
+					ImageAspectRatio * Scale;
+				const Float DeviceCoordY = (1.0 - 2.0 * (static_cast<Float>(IndexY) + 0.5 + RandomBiasY) / static_cast<Float>(ResolutionY)) * Scale;
+				ViewDirection = FVector(-DeviceCoordX, DeviceCoordY, 1).Normalize();
+			}
 			NewFramebuffer[PixelIndex] += Shade(FRay(EyePos, ViewDirection), InScene, 0) * InverseSamplesPerPixel;
 		}
 
@@ -129,14 +133,12 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	{
 		const FVector IndirectLightDirection = ShadingPointInteraction.HitMaterial->Sample(ViewRayDirection, ShadingPointNormal);
 		const Float Costheta = DotProduct(IndirectLightDirection, ShadingPointNormal);
-		if (Costheta > 0.0)
-		{
-			constexpr Float InverseHemiSpherePdf = 2.0 * PI;
-			const FVector InRadiance = Shade(FRay(ShadingPointPosition, IndirectLightDirection), InScene, Depth + 1);
-			const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(IndirectLightDirection, ViewRayDirection, ShadingPointNormal);
+		assert(Costheta >= 0.0);
+		constexpr Float InverseHemiSpherePdf = 2.0 * PI;
+		const FVector InRadiance = Shade(FRay(ShadingPointPosition, IndirectLightDirection), InScene, Depth + 1);
+		const FVector BRDF = ShadingPointInteraction.HitMaterial->Eval(IndirectLightDirection, ViewRayDirection, ShadingPointNormal);
 
-			IndirectLightRadiance = InRadiance * BRDF * Costheta * InverseHemiSpherePdf * InverseRussianRoulette;
-		}
+		IndirectLightRadiance = InRadiance * BRDF * Costheta * InverseHemiSpherePdf * InverseRussianRoulette;
 	}
 
 	return DirectLightRadiance + IndirectLightRadiance;
