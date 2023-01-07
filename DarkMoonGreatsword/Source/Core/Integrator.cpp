@@ -5,6 +5,7 @@
 
 #include "Ray.h"
 #include "Scene.h"
+#include "Utility.h"
 
 inline Float Deg2Rad(const Float InDeg) { return InDeg * PI / 180.0; }
 
@@ -59,9 +60,7 @@ void FPathIntegrator::Render(const FScene& InScene)
 		}
 	}
 
-	_Framebuffer = NewFramebuffer;
-
-	SaveToFile();
+	Framebuffer = NewFramebuffer;
 }
 
 FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Depth)
@@ -142,25 +141,4 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	}
 
 	return DirectLightRadiance + IndirectLightRadiance;
-}
-
-inline Float Clamp(const Float& Low, const Float& High, const Float& InValue)
-{
-	return std::max(Low, std::min(High, InValue));
-}
-
-void FPathIntegrator::SaveToFile()
-{
-	FILE* Fp = fopen("../Result/result.ppm", "wb");
-	(void)fprintf(Fp, "P6\n%d %d\n255\n", _ResolutionX, _ResolutionY);
-	for (const auto& Pixel : _Framebuffer)
-	{
-		static unsigned char Color[3];
-		Color[0] = static_cast<unsigned char>(255 * std::pow(Clamp(0, 1, Pixel.X), 0.6f));
-		Color[1] = static_cast<unsigned char>(255 * std::pow(Clamp(0, 1, Pixel.Y), 0.6f));
-		Color[2] = static_cast<unsigned char>(255 * std::pow(Clamp(0, 1, Pixel.Z), 0.6f));
-		fwrite(Color, 1, 3, Fp);
-	}
-
-	fclose(Fp);
 }

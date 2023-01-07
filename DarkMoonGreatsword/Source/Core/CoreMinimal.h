@@ -2,11 +2,10 @@
 
 #include <vector>
 #include <string>
-#include <cmath>
 #include <assert.h>
 
+#include "MathCore.h"
 #include "Vector.h"
-#include "Utility.h"
 
 template <class Type>
 using TArray = std::vector<Type>;

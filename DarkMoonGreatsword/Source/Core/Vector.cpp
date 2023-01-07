@@ -4,6 +4,11 @@
 
 #include "Utility.h"
 
+FVector operator+(Float Lhs, const FVector& Rhs)
+{
+	return Rhs + Lhs;
+}
+
 FVector operator*(Float Lhs, const FVector& Rhs)
 {
 	FVector ResultVector;
@@ -85,6 +90,17 @@ FVector FVector::operator+(const FVector& Other) const
 	return ResultVector;
 }
 
+FVector FVector::operator+(Float ScalarValue) const
+{
+	FVector ResultVector;
+
+	ResultVector.X = X + ScalarValue;
+	ResultVector.Y = Y + ScalarValue;
+	ResultVector.Z = Z + ScalarValue;
+
+	return ResultVector;
+}
+
 FVector FVector::operator-(const FVector& Other) const
 {
 	FVector ResultVector;
@@ -103,6 +119,17 @@ FVector FVector::operator-() const
 	ResultVector.X = -X;
 	ResultVector.Y = -Y;
 	ResultVector.Z = -Z;
+
+	return ResultVector;
+}
+
+FVector FVector::operator/(const FVector& Other) const
+{
+	FVector ResultVector;
+
+	ResultVector.X = X / Other.X;
+	ResultVector.Y = Y / Other.Y;
+	ResultVector.Z = Z / Other.Z;
 
 	return ResultVector;
 }
@@ -129,7 +156,7 @@ FVector& FVector::operator+=(const FVector& Other)
 
 bool FVector::IsAlmostSame(const FVector& VectorA, const FVector& VectorB)
 {
-	return IsAlmostSameFloat(VectorA.X, VectorB.X, Epsilon) && IsAlmostSameFloat(VectorA.Y, VectorB.Y, Epsilon) && IsAlmostSameFloat(VectorA.Z, VectorB.Z, Epsilon); 
+	return IsAlmostSameFloat(VectorA.X, VectorB.X, Epsilon) && IsAlmostSameFloat(VectorA.Y, VectorB.Y, Epsilon) && IsAlmostSameFloat(VectorA.Z, VectorB.Z, Epsilon);
 }
 
 Float FVector::ScalarProduct(const FVector& Other) const

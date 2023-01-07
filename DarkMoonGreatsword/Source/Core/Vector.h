@@ -1,5 +1,5 @@
 ﻿#pragma once
-#include "Utility.h"
+#include "MathCore.h"
 
 struct FVector
 {
@@ -16,9 +16,11 @@ public:
 	FVector operator*(const FVector& Other) const;
 
 	FVector operator+(const FVector& Other) const;
+	FVector operator+(Float ScalarValue) const;
 	FVector operator-(const FVector& Other) const;
 	FVector operator-() const;
 
+	FVector operator/(const FVector& Other) const;
 	FVector operator/(Float Number) const;
 
 	FVector& operator+=(const FVector& Other);
@@ -53,8 +55,15 @@ public:
 	}
 };
 
+FVector operator+(Float Lhs, const FVector& Rhs);
+
 FVector operator*(Float Lhs, const FVector& Rhs);
 FVector operator*(const FVector& Lhs, Float Rhs);
 
 FVector Normalize(const FVector& InVector);
 Float DotProduct(const FVector& InVector1, const FVector& InVector2);
+
+inline FVector Saturate(const FVector& InVector)
+{
+	return {Saturate(InVector.X), Saturate(InVector.Y), Saturate(InVector.Z)};
+}

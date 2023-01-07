@@ -4,6 +4,8 @@
 
 #include <unordered_map>
 
+#include "Utility.h"
+
 FTriangle::FTriangle()
 {
 }

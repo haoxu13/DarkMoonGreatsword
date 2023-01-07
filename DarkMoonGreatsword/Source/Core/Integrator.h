@@ -16,15 +16,15 @@ public:
 	static constexpr Float RussianRoulette{0.8};
 	static constexpr Float InverseRussianRoulette{1.0 / RussianRoulette};
 
-	static constexpr int SamplesPerPixel{10000};
+	static constexpr int SamplesPerPixel{20000};
 	static constexpr Float InverseSamplesPerPixel{1.0 / SamplesPerPixel};
 
 	static constexpr bool SampleIndirectLight{true};
 
+public:
+	TArray<FVector> Framebuffer;
+
 private:
-	TArray<FVector> _Framebuffer;
 	int _ResolutionX;
 	int _ResolutionY;
-
-	void SaveToFile();
 };

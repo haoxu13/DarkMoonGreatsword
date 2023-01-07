@@ -1,24 +1,15 @@
 ﻿#pragma once
 
+#include "CoreMinimal.h"
+#include "ToneMappingUtility.h"
+
 #include <filesystem>
-#include <random>
+#include <fstream>
+#include <sstream>
 
 // https://gcc.gnu.org/onlinedocs/cpp/Stringizing.html
 #define XSTR(s) STR(s)
 #define STR(s) #s
-
-#undef  PI
-#define PI 					(3.1415926535897932384626433832795)
-
-typedef int8_t int8;
-typedef int16_t int16;
-typedef int32_t int32;
-
-typedef uint8_t uint8;
-typedef uint16_t uint16;
-typedef uint32_t uint32;
-
-typedef double Float;
 
 inline std::filesystem::path GetAssetPath(const std::string& AssetFile)
 {
@@ -26,49 +17,61 @@ inline std::filesystem::path GetAssetPath(const std::string& AssetFile)
 	return std::filesystem::path(XSTR(ASSET_DIR)) += std::filesystem::path(TempFileName);
 }
 
-inline constexpr Float Epsilon = 0.000001;
-
-inline bool IsAlmostSameFloat(Float Number1, Float Number2, Float Error = Epsilon)
+inline void ExportFrameBufferToPpm(const TArray<FVector>& InFramebuffer, int InResolutionX, int InResolutionY)
 {
-	return std::fabs(Number1 - Number2) < Error;
+	FILE* Fp = fopen("../Result/result.ppm", "wb");
+	(void)fprintf(Fp, "P6\n%d %d\n255\n", InResolutionX, InResolutionY);
+
+	Float MaxLuminance = -INFINITY;
+	for (const auto& Pixel : InFramebuffer)
+	{
+		const Float Luminance = luminance(Pixel);
+		if (Luminance > MaxLuminance)
+		{
+			MaxLuminance = Luminance;
+		}
+	}
+
+	for (const auto& Pixel : InFramebuffer)
+	{
+		static unsigned char Color[3];
+		constexpr Float Gamma = 1.0 / 2.2;
+		const FVector ToneMappedColor = reinhard_extended_luminance(Pixel, MaxLuminance);
+		Color[0] = static_cast<unsigned char>(255 * std::pow(ToneMappedColor.X, Gamma));
+		Color[1] = static_cast<unsigned char>(255 * std::pow(ToneMappedColor.Y, Gamma));
+		Color[2] = static_cast<unsigned char>(255 * std::pow(ToneMappedColor.Z, Gamma));
+		fwrite(Color, 1, 3, Fp);
+	}
+
+	fclose(Fp);
 }
 
-inline bool IsAlmostZero(Float Number)
+inline void ExportFrameBufferToBinaryFile(const TArray<FVector>& InFramebuffer, int InResolutionX, int InResolutionY)
 {
-	return Number > -Epsilon && Number < Epsilon;
+	std::ostringstream FileNameStream;
+	FileNameStream << "../Result/FrameBufferValue_" << InResolutionX << "_" << InResolutionY;
+	const std::string FileName = FileNameStream.str();
+	std::ofstream FrameBufferTextFileStream(FileName, std::ios::out | std::ios::binary);
+	// size_t FrameBufferSize = InFramebuffer.size();
+	// FrameBufferTextFileStream.write((char*)&FrameBufferSize, sizeof FrameBufferSize);
+	FrameBufferTextFileStream.write((char*)InFramebuffer.data(), InFramebuffer.size() * sizeof(FVector));
+	FrameBufferTextFileStream.close();
 }
 
-inline bool IsAlmostGreaterThanZero(Float Number)
+inline void ImportFrameBufferFromTextFile(const TArray<FVector>& InFramebuffer, int InResolutionX, int InResolutionY)
 {
-	return Number >= - Epsilon;
-}
+	std::ostringstream FileNameStream;
+	FileNameStream << "../Result/FrameBufferValue_" << InResolutionX << "_" << InResolutionY;
+	const std::string FileName = FileNameStream.str();
+	std::ifstream FrameBufferTextFileStream(FileName, std::ios::in | std::ios::binary);
 
-inline bool IsAlmostSmallerThanOne(Float Number)
-{
-	constexpr Float OnePlusEpsilon = 1.0 + Epsilon;
-	return Number <= OnePlusEpsilon;
-}
+	// Get length of file
+	FrameBufferTextFileStream.seekg(0, std::ios::end);
+	size_t FileLength = FrameBufferTextFileStream.tellg();
 
-inline bool IsAlmostInRange(Float Number)
-{
-	return IsAlmostGreaterThanZero(Number) && IsAlmostSmallerThanOne(Number);
-}
+	// Read file
+	FrameBufferTextFileStream.seekg(0, std::ios::beg);
+	FrameBufferTextFileStream.read((char*)InFramebuffer.data(), FileLength);
 
-// Distribution in range [0.0, 1.0]
-inline Float GetRandomFloat(Float Min = 0.0, Float Max = 1.0)
-{
-	std::random_device RandomDevice;
-	std::mt19937 Rng(RandomDevice());
-	const std::uniform_real_distribution<Float> Dist(Min, Max);
-
-	return Dist(Rng);
-}
-
-inline int GetRandomIntInRange(int Min, int Max)
-{
-	std::random_device RandomDevice;
-	std::mt19937 Rng(RandomDevice());
-	const std::uniform_int_distribution Dist(Min, Max);
-
-	return Dist(Rng);
+	FrameBufferTextFileStream.close();
 }
