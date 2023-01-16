@@ -33,7 +33,7 @@ int main()
 	FMaterial* White = new FMaterial("White");
 	White->Kd = FVector(0.725, 0.71, 0.68);
 	FMaterial* LightMaterial = new FMaterial("Light");
-	LightMaterial->Emission = 8.0 * FVector(0.747 + 0.058, 0.747 + 0.258, 0.747) + 15.6 *
+	LightMaterial->Emission = 8.0 * FVector(0.747 + 0.058, 0.747 + 0.285, 0.747) + 15.6 *
 		FVector(0.740 + 0.287, 0.740 + 0.160, 0.740) + 18.4 * FVector(0.737 + 0.642, 0.737 + 0.159, 0.737);
 	LightMaterial->Kd = FVector(0.65);
 

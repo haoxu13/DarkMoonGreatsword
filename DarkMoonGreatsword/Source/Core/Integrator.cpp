@@ -77,6 +77,12 @@ FVector FPathIntegrator::Shade(const FRay& InRay, const FScene& InScene, int Dep
 	// Hit light source, assuming light source won't reflect radiance
 	if (ShadingPointInteraction.Emit.Norm() > 0.0)
 	{
+		// Don't sample direct light when sampling indirect light 
+		if (Depth > 0)
+		{
+			return FVector();
+		}
+
 		return ShadingPointInteraction.Emit;
 	}
 
